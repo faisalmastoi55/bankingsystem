@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+  https://www.springframework.org/schema/beans/spring-beans.xsd
+  http://www.springframework.org/schema/context
+  https://www.springframework.org/schema/context/spring-context.xsd
+  http://www.springframework.org/schema/tx
+  https://www.springframework.org/schema/tx/spring-tx.xsd">
+	<tx:annotation-driven />
+	<context:component-scan
+		base-package="bankingsystem" />
+
+	<!-- <bean id="jacksonMessageConverter"
+		class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter" />
+	<bean
+		class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter">
+		<property name="messageConverters">
+			<list>
+				<ref bean="jacksonMessageConverter" />
+			</list>
+		</property>
+	</bean>
+ -->
+	<bean
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver"
+		name="viewResolver">
+		<property name="prefix" value="/WEB-INF/views/" />
+		<property name="suffix" value=".jsp" />
+	</bean>
+
+	<bean id="ds"
+		class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName"
+			value="com.mysql.cj.jdbc.Driver" />
+		<property name="url"
+			value="jdbc:mysql://localhost:3306/banking" />
+		<property name="username" value="root" />
+		<property name="password" value="root" />
+	</bean>
+
+	<bean id="factory"
+		class="org.springframework.orm.hibernate5.LocalSessionFactoryBean">
+		<property name="dataSource" ref="ds" />
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.dialect">org.hibernate.dialect.MySQL8Dialect</prop>
+				<prop key="hibernate.show_sql">true</prop>
+				<prop key="hibernate.hbm2ddl.auto">update</prop>
+			</props>
+		</property>
+
+		<property name="annotatedClasses">
+			<list>
+				<value>bankingsystem.entities.Customer</value>
+				<value>bankingsystem.entities.Account</value>
+				<value>bankingsystem.entities.Transaction</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="hibernateTemplate"
+		class="org.springframework.orm.hibernate5.HibernateTemplate">
+		<property name="sessionFactory" ref="factory" />
+	</bean>
+	
+	
+	<bean id="transactionManager"
+		class="org.springframework.orm.hibernate5.HibernateTransactionManager">
+		<property name="sessionFactory" ref="factory" />
+	</bean>
+
+	<!--Customer Controller Bean -->
+	<bean class="bankingsystem.service.impl.CustomerServiceImpl"
+		id="customerService">
+		<constructor-arg ref="hibernateTemplate" />
+	</bean>
+
+	<bean id="customerController"
+		class="bankingsystem.controller.CustomerController">
+		<constructor-arg ref="customerService" />
+	</bean>
+
+	<!-- Account Controller -->
+	<bean class="bankingsystem.service.impl.AccountServiceImpl"
+		id="accountService">
+		<constructor-arg ref="hibernateTemplate" />
+		<constructor-arg ref="accountRepository" />
+		<constructor-arg ref="customerRepository"/>
+	</bean>
+
+	<bean id="accountController"
+		class="bankingsystem.controller.AccountController">
+		<constructor-arg ref="accountService" />
+	</bean>
+	
+	<!-- Define the CustomerRepository bean -->
+    <bean id="customerRepository" class="bankingsystem.repo.imp.CustomerRepositoryImpl">
+        <constructor-arg ref="factory"/>
+    </bean>
+
+	<!-- Repositories -->
+	<bean id="accountRepository"
+		class="bankingsystem.repo.imp.AccountRepositoryImpl">
+		<constructor-arg ref="hibernateTemplate" />
+	</bean>
+
+	<bean id="transactionRepository"
+		class="bankingsystem.repo.imp.TransactionRepositoryImpl">
+		<constructor-arg ref="hibernateTemplate" />
+	</bean>
+
+	<!-- Transfer -->
+	<bean id="transfer" class="bankingsystem.helper.Transfer">
+		<constructor-arg ref="accountRepository" />
+	</bean>
+
+	<!-- Services -->
+	<bean id="transactionService"
+		class="bankingsystem.service.impl.TransactionServiceImpl">
+		<constructor-arg ref="hibernateTemplate" />
+		<constructor-arg ref="accountRepository" />
+		<constructor-arg ref="transactionRepository" />
+		<constructor-arg ref="transfer" />
+	</bean>
+
+
+	<bean id="transactionController"
+		class="bankingsystem.controller.TransactionController">
+		<constructor-arg ref="transactionService" />
+	</bean>
+
+	
+
+
+</beans>
